@@ -194,11 +194,18 @@ Add-Type @"
 $cur_wlp_item = Get-ChildItem -Path $(Get-Wallpaper)
 
 Write-Output "Request provider update..."
-$content = Invoke-WebRequest -Uri "$($HOST_URL+$JSON_URL)"
+try {
+    $content = Invoke-WebRequest -Uri "$($HOST_URL+$JSON_URL)"
+}
+catch {
+    Write-Output "Web invoke error: $($HOST_URL+$JSON_URL)"
+    exit -1
+}
+
 $obj = ConvertFrom-Json -InputObject $content
 $img_obj = $obj.images[0]
 
-$file_path = Join-Path -Path $TEMP -ChildPath $($img_obj.hsh + ".jpg")
+$file_path = Join-Path -Path $TEMP -ChildPath "$($img_obj.hsh).jpg"
 
 if (-Not ($cur_wlp_item.FullName -eq $file_path)) {
     if (-Not (Test-Path -Path $file_path)) {
@@ -212,17 +219,17 @@ if (-Not ($cur_wlp_item.FullName -eq $file_path)) {
         }
         Write-Output "File: $file_path"
     }
-    Write-Output "Set desktop wallpaper:$file_path"
+    Write-Output "Set desktop wallpaper: $file_path"
     Set-Wallpaper -Path $file_path
         
     try {
-        Write-Output "Set lockscreen wallpaper:$file_path"
+        Write-Output "Set lockscreen wallpaper: $file_path"
         Set-LockScreenWallpaper -Path $file_path
     }
     catch { }
 
     if ($cur_wlp_item.Directory -eq $TEMP_ITEM) {
-        Write-Output "Remove old file:$($cur_wlp_item.FullName)"
+        Write-Output "Remove old file: $($cur_wlp_item.FullName)"
         Remove-Item -Path $cur_wlp_item.FullName
     }
 }
